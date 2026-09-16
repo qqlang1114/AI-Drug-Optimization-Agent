@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const pangmen = localFont({
+  src: "../../public/sites/www-yaozhineng-com-268f6e3b/shared/PangMenZhengDaoBiaoTiTi-1.ttf",
+  variable: "--font-pangmen",
+  display: "swap",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
-  title: "Website Clone",
-  description: "Pixel-perfect website clone",
+  title: "FD-Agent Molecular UI",
+  description: "AI驱动的成药性优化 — 成药性优化智能体",
+  icons: {
+    icon: "/sites/www-yaozhineng-com-268f6e3b/shared/yzn_logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -24,10 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="zh-CN"
+      className={`${pangmen.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-[#f8f9fc] text-[#1a1f36]">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

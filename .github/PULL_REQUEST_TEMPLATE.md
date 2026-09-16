@@ -1,19 +1,9 @@
 ## Summary
 
-<!-- What does this PR do and why? -->
+<!-- What changed and why -->
 
-## Related Issue
+## Test plan
 
-<!-- Link to the issue this addresses, e.g. Closes #123 -->
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation
-- [ ] Refactoring
-- [ ] Breaking change
-
-## Checklist
-
-- [ ] `npm run check` passes (lint + typecheck + build)
+- [ ] `npm run build` succeeds
+- [ ] Homepage, login, and chat still load
+- [ ] Quick actions start the three mock workflows

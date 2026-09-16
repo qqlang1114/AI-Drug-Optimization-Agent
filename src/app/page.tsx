@@ -1,9 +1,5 @@
+import { HomePage } from "@/components/sites/www-yaozhineng-com-268f6e3b/root-8a5edab2/HomePage";
+
 export default function Home() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <p className="text-muted-foreground">
-        Clone target not yet built. Run <code className="font-mono text-foreground">/clone-website</code> to start.
-      </p>
-    </main>
-  );
+  return <HomePage />;
 }

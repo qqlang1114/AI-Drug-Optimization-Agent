@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成药性优化智能体 · 工作流演示</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f7f8fc;--bg2:#ffffff;--bg3:#f0f2f8;
+  --primary:#4f6ef7;
+  --green:#00b96b;--green-l:#e6faf0;--green-d:#008a50;
+  --cyan:#0891b2;--cyan-l:#e0f7fa;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --orange:#ea580c;--orange-l:#fff4e6;
+  --red:#dc2626;--red-l:#fef2f2;
+  --yellow:#d97706;--yellow-l:#fef9ee;
+  --blue:#2563eb;--blue-l:#eff6ff;
+  --text:#1a1f36;--text2:#475569;--dim:#94a3b8;
+  --line:#e2e8f0;--card-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 24px rgba(0,0,0,0.04);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Noto Sans SC',sans-serif;color:var(--text)}
+
+/* ── Intro ── */
+#intro{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+#intro.hidden{opacity:0;pointer-events:none}
+.intro-icon{font-size:48px;margin-bottom:20px;opacity:0}
+#intro h1{font-size:clamp(26px,5vw,48px);font-weight:900;text-align:center;line-height:1.3;opacity:0}
+#intro h1 span{background:linear-gradient(135deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#intro .sub{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);margin-top:12px;letter-spacing:3px;opacity:0}
+#playBtn{margin-top:36px;background:var(--green);border:none;color:#fff;font-family:'Noto Sans SC',sans-serif;font-size:14px;font-weight:700;padding:12px 36px;border-radius:40px;cursor:pointer;opacity:0;transition:transform .2s,box-shadow .2s}
+#playBtn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(0,185,107,.25)}
+
+/* ── Stage ── */
+#stage{width:100%;height:100%;display:none;position:relative;overflow:hidden}
+
+/* Progress */
+#progWrap{position:absolute;top:0;left:0;right:0;height:3px;background:var(--line);z-index:20}
+#progFill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .6s ease}
+
+/* Main layout */
+.main{position:absolute;top:3px;bottom:36px;left:0;right:0;display:flex;overflow:hidden}
+
+/* Left narration panel */
+.narration{width:340px;min-width:280px;border-right:1px solid var(--line);background:var(--bg2);padding:32px 24px;overflow-y:auto;display:flex;flex-direction:column}
+.nar-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:4px;background:var(--green-l);color:var(--green);margin-bottom:14px;opacity:0;transform:translateY(10px);transition:all .3s}
+.nar-badge.show{opacity:1;transform:translateY(0)}
+.nar-title{font-size:22px;font-weight:800;line-height:1.35;margin-bottom:14px;opacity:0;transform:translateY(10px);transition:all .3s .05s}
+.nar-title.show{opacity:1;transform:translateY(0)}
+.nar-desc{font-size:13px;line-height:2;color:var(--text2);opacity:0;transform:translateY(10px);transition:all .3s .1s}
+.nar-desc.show{opacity:1;transform:translateY(0)}
+.nar-desc strong{color:var(--cyan);font-weight:600}
+.nar-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:16px;opacity:0;transition:opacity .3s .2s}
+.nar-tags.show{opacity:1}
+.ntag{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:3px;letter-spacing:.5px}
+.ntg{background:var(--green-l);color:var(--green)}.ntc{background:var(--cyan-l);color:var(--cyan)}
+.ntp{background:var(--purple-l);color:var(--purple)}.nto{background:var(--orange-l);color:var(--orange)}
+.ntr{background:var(--red-l);color:var(--red)}.nty{background:var(--yellow-l);color:var(--yellow)}
+.ntb{background:var(--blue-l);color:var(--blue)}
+
+/* Right visual panel */
+.visual{flex:1;padding:28px 32px;overflow-y:auto;background:var(--bg)}
+.vis-container{max-width:680px;margin:0 auto;opacity:0;transform:translateY(20px) scale(.98);transition:all .4s cubic-bezier(.16,1,.3,1)}
+.vis-container.show{opacity:1;transform:translateY(0) scale(1)}
+
+/* ── Visual Components ── */
+
+/* Data table */
+.dtable{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px;background:var(--bg2)}
+.dtable th{background:var(--bg3);font-weight:600;font-size:11px;color:var(--text2);text-align:left;padding:10px 14px;letter-spacing:.5px;text-transform:uppercase}
+.dtable td{padding:10px 14px;border-top:1px solid var(--line)}
+.dtable tr:hover td{background:var(--bg3)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.val-g{color:var(--green);font-weight:600}
+.val-r{color:var(--red);font-weight:600}
+.val-y{color:var(--yellow);font-weight:600}
+
+/* Property grid */
+.prop-grid{display:grid;gap:10px}
+.prop-grid.g4{grid-template-columns:repeat(4,1fr)}
+.prop-grid.g3{grid-template-columns:repeat(3,1fr)}
+.prop-grid.g2{grid-template-columns:repeat(2,1fr)}
+.prop-cell{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-align:center;opacity:0;transform:scale(.9);transition:all .25s cubic-bezier(.16,1,.3,1)}
+.prop-cell.show{opacity:1;transform:scale(1)}
+.prop-cell .pval{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;margin-bottom:4px}
+.prop-cell .plbl{font-size:11px;color:var(--dim)}
+
+/* Section header */
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;margin-top:20px}
+.sec-hdr:first-child{margin-top:0}
+.sec-dot{width:10px;height:10px;border-radius:50%}
+.sec-hdr span{font-size:13px;font-weight:700;letter-spacing:.5px}
+
+/* Bar chart */
+.bar-chart{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:100px;font-size:11px;color:var(--text2);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:24px;background:var(--bg3);border-radius:6px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:6px;width:0;transition:width .6s cubic-bezier(.16,1,.3,1);display:flex;align-items:center;padding-left:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#fff;font-weight:600}
+.bar-fill.show{/* width set inline */}
+
+/* Funnel */
+.funnel{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
+.funnel-layer{height:44px;padding:0 16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;line-height:1.45;text-align:center;opacity:0;transform:scaleX(0);transition:all .4s cubic-bezier(.16,1,.3,1)}
+.funnel-layer.show{opacity:1;transform:scaleX(1)}
+.funnel-arrow{color:var(--dim);font-size:18px;opacity:0;transition:opacity .3s}
+.funnel-arrow.show{opacity:1}
+
+/* Molecule comparison */
+.mol-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-top:16px}
+.mol-box{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center;opacity:0;transform:translateX(-20px);transition:all .3s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mol-box:last-child{transform:translateX(20px)}
+.mol-box.show{opacity:1;transform:translateX(0)}
+.mol-box .mol-label{font-size:11px;color:var(--dim);margin-bottom:10px}
+.mol-box .mol-struct{font-size:40px;margin-bottom:10px}
+.mol-box .mol-smiles{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);word-break:break-all;line-height:1.6}
+.mol-arrow{display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s .4s;padding:0 4px}
+.mol-arrow.show{opacity:1}
+.route-card.show{opacity:1!important;transform:translateY(0)!important}
+.mol-arrow img{width:36px;height:24px;display:block}
+.mol-box.optimized{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+.mol-diff{background:var(--green-l);border:1px solid rgba(0,185,107,0.2);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:11px;color:var(--green-d);text-align:center;line-height:1.6}
+
+/* Score ranking */
+.rank-list{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.rank-card{display:flex;align-items:center;gap:16px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 20px;opacity:0;transform:translateY(16px);transition:all .3s cubic-bezier(.16,1,.3,1)}
+.rank-card.show{opacity:1;transform:translateY(0)}
+.rank-card.top{border-color:var(--green);box-shadow:0 0 0 2px var(--green-l)}
+.rank-pos{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px}
+.rank-pos.r1{background:var(--green-l);color:var(--green)}
+.rank-pos.r2{background:var(--cyan-l);color:var(--cyan)}
+.rank-pos.r3{background:var(--purple-l);color:var(--purple)}
+.rank-info{flex:1}
+.rank-smiles{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);margin-bottom:4px}
+.rank-props{display:flex;gap:8px;flex-wrap:wrap}
+.rank-prop{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:3px;background:var(--bg3)}
+.rank-prop .up{color:var(--green)}
+.rank-prop .dn{color:var(--red)}
+.rank-score{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800}
+
+/* ADMET detail grid for scoring */
+.admet-detail{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.admet-mini{display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:6px;padding:6px 10px;font-size:11px}
+.admet-mini .ak{color:var(--text2)}.admet-mini .av{font-family:'JetBrains Mono',monospace;font-weight:600}
+
+/* Filter visual */
+.filter-pipeline{display:flex;flex-direction:column;gap:0}
+.filter-step{display:flex;align-items:center;gap:14px;padding:14px 16px;border-left:3px solid var(--line);opacity:0;transform:translateX(-10px);transition:all .25s cubic-bezier(.16,1,.3,1)}
+.filter-step.show{opacity:1;transform:translateX(0)}
+.filter-step.pass{border-left-color:var(--green)}
+.filter-step.fail{border-left-color:var(--red)}
+.filter-icon{font-size:20px;width:28px;text-align:center}
+.filter-info{flex:1}
+.filter-name{font-weight:600;font-size:13px;margin-bottom:2px}
+.filter-detail{font-size:11px;color:var(--text2)}
+.filter-result{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px}
+.filter-result.pass{background:var(--green-l);color:var(--green)}
+.filter-result.fail{background:var(--red-l);color:var(--red)}
+
+/* Weight visual */
+.weight-vis{display:flex;gap:4px;height:40px;border-radius:8px;overflow:hidden;margin-top:14px}
+.weight-seg{display:flex;align-items:center;justify-content:center;min-width:74px;padding:0 6px;text-align:center;line-height:1.2;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#fff;opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.weight-seg.show{opacity:1}
+.weight-seg.tight{flex-direction:column;gap:1px;min-width:62px;padding:4px 4px;font-size:9px;line-height:1.05}
+.weight-seg.tight span{display:block}
+
+/* Terminal */
+.vis-terminal{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:var(--text2);margin-top:16px}
+.vis-terminal .tln{opacity:0;transform:translateX(-8px);transition:all .2s}
+.vis-terminal .tln.show{opacity:1;transform:translateX(0)}
+
+/* ── Bottom timeline ── */
+.bottombar{position:absolute;bottom:0;left:0;right:0;height:36px;background:var(--bg2);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:0;z-index:20;padding:0 16px}
+.tl-node{width:10px;height:10px;border-radius:50%;background:var(--bg3);border:2px solid var(--line);position:relative;transition:all .3s;cursor:pointer;z-index:2;flex-shrink:0}
+.tl-node.done{border-color:var(--green);background:var(--green)}
+.tl-node.current{border-color:var(--cyan);background:var(--bg2);box-shadow:0 0 0 4px rgba(8,145,178,.15);animation:np 1.5s infinite}
+@keyframes np{0%,100%{box-shadow:0 0 0 4px rgba(8,145,178,.15)}50%{box-shadow:0 0 0 8px rgba(8,145,178,.08)}}
+.tl-node:hover{transform:scale(1.3)}
+.tl-edge{width:clamp(16px,3vw,40px);height:2px;background:var(--line);transition:background .3s;flex-shrink:0}
+.tl-edge.done{background:var(--green)}
+.tl-lbl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--dim);white-space:nowrap;opacity:0;transition:opacity .2s}
+.tl-node.current .tl-lbl,.tl-node:hover .tl-lbl{opacity:1;color:var(--cyan)}
+
+/* ── Outro ── */
+#outro{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .8s}
+#outro.show{opacity:1;pointer-events:auto}
+#outro h2{font-size:clamp(24px,4vw,44px);font-weight:900;background:linear-gradient(135deg,var(--green),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:0;transform:translateY(20px);transition:all .8s}
+#outro h2.show{opacity:1;transform:translateY(0)}
+#outro .os{max-width:min(92vw,560px);padding:0 16px;font-size:12px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:12px;letter-spacing:2px;line-height:1.8;text-align:center;white-space:normal;opacity:0;transition:opacity .8s}
+#outro .os.show{opacity:1}
+#replayBtn{margin-top:32px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:30px;cursor:pointer;opacity:0;transition:all .3s}
+#replayBtn.show{opacity:1}
+#replayBtn:hover{background:var(--green-l)}
+
+@media(max-width:768px){
+  .narration{width:240px;min-width:200px;padding:20px 14px}
+  .nar-title{font-size:17px}
+  .prop-grid.g4{grid-template-columns:repeat(2,1fr)}
+  .mol-compare{grid-template-columns:1fr}
+  .funnel{gap:10px}
+  .funnel .funnel-layer{height:auto;min-height:52px;padding:12px 14px;font-size:11px}
+  .funnel .funnel-layer:nth-of-type(1){width:100%!important}
+  .funnel .funnel-layer:nth-of-type(3){width:84%!important}
+  .funnel .funnel-layer:nth-of-type(5){width:68%!important}
+  .mol-arrow{padding:2px 0;min-height:28px}
+  .mol-arrow img{display:none}
+  .mol-arrow::before{content:'↓';font-size:24px;line-height:1;color:var(--green);font-weight:700}
+  .score-row{flex-direction:column}
+  .rank-card{flex-direction:column;text-align:center}
+  .rank-score{font-size:22px}
+}
+@media(max-width:560px){
+  .narration{display:none}
+  .visual{padding:16px}
+  #outro .os{max-width:280px;padding:0 10px;font-size:10px;letter-spacing:1px;line-height:1.7}
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="progWrap"><div id="progFill"></div></div>
+  <div class="main">
+    <div class="narration" id="narPanel"></div>
+    <div class="visual" id="visPanel"></div>
+  </div>
+  <div class="bottombar" id="timeline"></div>
+</div>
+
+<div id="outro">
+  <h2>🧬 感谢观看</h2>
+  <div class="os">LEAD COMPOUND DRUGGABILITY OPTIMIZATION AGENT</div>
+  <button id="replayBtn" onclick="replay()">↻ 重新播放</button>
+</div>
+
+<script>
+// ═══ Steps Data ═══
+const S = [
+// 0: Input
+{
+  badge:'STEP 01', title:'用户输入 · 任务初始化',
+  desc:'用户提交 <strong>分子结构图像</strong> 和具体优化需求。系统调用 <strong>DECIMER</strong> 和 <strong>RDKit</strong> 工具将分子图像识别转换为 SMILES 字符串，随后启动完整优化流程。',
+  tags:[['INPUT','ntg'],['DECIMER','ntc'],['RDKit','ntc'],['Image→SMILES','ntp']],
+  vis(){
+    return `
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--green)"></div><span>用户输入</span></div>
+    <div style="display:flex;gap:14px;align-items:stretch">
+      <div class="mol-box" data-d="0" style="flex:1;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px">
+        <div class="mol-label">用户上传分子图像</div>
+        <div style="margin:8px 0"><img src="assets/molecule_input.png" style="max-height:80px;border-radius:6px" alt="分子结构"></div>
+      </div>
+      <div class="mol-box" data-d="1" style="flex:1;margin:0;display:flex;flex-direction:column;justify-content:center;padding:14px">
+        <div class="mol-label">用户优化需求</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.8;margin-top:8px;padding:10px 12px;background:var(--bg3);border-radius:6px">"请改善代谢稳定性并降低肝毒性风险"</div>
+      </div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--cyan)"></div><span>分子图像识别</span></div>
+    <div class="mol-compare">
+      <div class="mol-box" data-d="2" style="padding:12px">
+        <div class="mol-label">分子图像</div>
+        <div style="margin:10px 0"><img src="assets/molecule_input.png" style="max-width:100%;max-height:120px;border-radius:6px" alt="分子结构"></div>
+      </div>
+      <div class="mol-arrow"><img src="assets/arrow_right.svg" alt="arrow"></div>
+      <div class="mol-box" data-d="3" style="border-color:var(--green);display:flex;flex-direction:column;justify-content:center">
+        <div class="mol-label">SMILES 字符串</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green);line-height:1.8;margin-top:12px;word-break:break-all;padding:10px 12px;background:var(--green-l);border-radius:6px">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+      </div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--purple)"></div><span>计算基础性质</span></div>
+    <div class="prop-grid g4">
+      <div class="prop-cell" data-d="6"><div class="pval" style="color:var(--text)">314.36</div><div class="plbl">分子量 (MW)</div></div>
+      <div class="prop-cell" data-d="7"><div class="pval" style="color:var(--text)">C₁₇H₁₄O₄S</div><div class="plbl">分子式</div></div>
+      <div class="prop-cell" data-d="8"><div class="pval" style="color:var(--cyan)">2.56</div><div class="plbl">LogP</div></div>
+      <div class="prop-cell" data-d="9"><div class="pval" style="color:var(--cyan)">2.12</div><div class="plbl">合成难度 (SA)</div></div>
+    </div>
+    <div class="prop-grid g4" style="margin-top:10px">
+      <div class="prop-cell" data-d="10"><div class="pval" style="color:var(--purple)">60.44</div><div class="plbl">TPSA</div></div>
+      <div class="prop-cell" data-d="11"><div class="pval" style="color:var(--text)">0 / 4</div><div class="plbl">HBD / HBA</div></div>
+      <div class="prop-cell" data-d="12"><div class="pval" style="color:var(--text)">3</div><div class="plbl">可旋转键</div></div>
+      <div class="prop-cell" data-d="13"><div class="pval" style="color:var(--text)">22</div><div class="plbl">重原子数</div></div>
+    </div>`;
+  }
+},
+// 1: ADMET
+{
+  badge:'STEP 02', title:'ADMET 性质预测',
+  desc:'全面预测成药性，涵盖 <strong>吸收(A)</strong>、<strong>分布(D)</strong>、<strong>代谢(M)</strong>、<strong>排泄(E)</strong>、<strong>毒性(T)</strong>，建立优化基准。',
+  tags:[['Absorption','ntg'],['Distribution','ntc'],['Metabolism','nty'],['Excretion','ntp'],['Toxicity','ntr']],
+  vis(){
+    return `
+    <div class="sec-hdr"><div class="sec-dot" style="background:#3b82f6"></div><span>吸收 Absorption</span></div>
+    <div class="prop-grid g4">
+      <div class="prop-cell" data-d="0"><div class="pval val-g">0.996</div><div class="plbl">人体肠道吸收率</div></div>
+      <div class="prop-cell" data-d="1"><div class="pval" style="color:var(--text2)">-4.41</div><div class="plbl">Caco-2 通透性</div></div>
+      <div class="prop-cell" data-d="2"><div class="pval val-g">0.841</div><div class="plbl">口服生物利用度</div></div>
+      <div class="prop-cell" data-d="3"><div class="pval" style="color:var(--text2)">-4.43</div><div class="plbl">水溶性 LogS</div></div>
+    </div>
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--purple)"></div><span>分布 Distribution</span></div>
+    <div class="prop-grid g4">
+      <div class="prop-cell" data-d="4"><div class="pval" style="color:var(--text2)">0.301</div><div class="plbl">P-糖蛋白底物</div></div>
+      <div class="prop-cell" data-d="5"><div class="pval val-g">0.761</div><div class="plbl">血脑屏障通透</div></div>
+      <div class="prop-cell" data-d="6"><div class="pval" style="color:var(--text2)">91.19</div><div class="plbl">血浆蛋白结合率</div></div>
+      <div class="prop-cell" data-d="7"><div class="pval" style="color:var(--text2)">0.776</div><div class="plbl">稳态分布容积</div></div>
+    </div>
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--yellow)"></div><span>代谢 Metabolism</span></div>
+    <div class="prop-grid g3">
+      <div class="prop-cell" data-d="8"><div class="pval val-g">0.016</div><div class="plbl">CYP2D6 抑制</div></div>
+      <div class="prop-cell" data-d="9"><div class="pval" style="color:var(--text2)">0.251</div><div class="plbl">CYP3A4 抑制</div></div>
+      <div class="prop-cell" data-d="10"><div class="pval" style="color:var(--text2)">0.268</div><div class="plbl">CYP2C9 抑制</div></div>
+    </div>
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--green)"></div><span>排泄 Excretion</span></div>
+    <div class="prop-grid g3">
+      <div class="prop-cell" data-d="11"><div class="pval" style="color:var(--text2)">21.54</div><div class="plbl">半衰期 (h)</div></div>
+      <div class="prop-cell" data-d="12"><div class="pval" style="color:var(--text2)">21.05</div><div class="plbl">微粒体清除率</div></div>
+      <div class="prop-cell" data-d="13"><div class="pval" style="color:var(--text2)">45.44</div><div class="plbl">肝细胞清除率</div></div>
+    </div>
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--red)"></div><span>毒性 Toxicity</span></div>
+    <div class="prop-grid g4">
+      <div class="prop-cell" data-d="14"><div class="pval val-g">0.137</div><div class="plbl">hERG 心脏毒性</div></div>
+      <div class="prop-cell" data-d="15"><div class="pval val-g">0.039</div><div class="plbl">AMES 致突变性</div></div>
+      <div class="prop-cell" data-d="16"><div class="pval val-r">0.969</div><div class="plbl">肝损伤风险</div></div>
+      <div class="prop-cell" data-d="17"><div class="pval" style="color:var(--text2)">2.12</div><div class="plbl">急性毒性 LD50</div></div>
+    </div>`;
+  }
+},
+// 4: Retrieval funnel + RAG
+{
+  badge:'STEP 03', title:'相似分子检索与 RAG 生成',
+  desc:'通过<strong>三层检索漏斗</strong>从分子库中逐级定位结构最相近的候选分子，以此作为锚点检索文献知识库，融合大模型先验知识，生成优化路线。',
+  tags:[['Murcko','ntg'],['MCS >60%','ntc'],['Tanimoto','ntp'],['RAG','ntp'],['LLM','ntg']],
+  vis(){
+    return `
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--green)"></div><span>三层检索漏斗 · 定位相似分子</span></div>
+    <div class="funnel">
+      <div class="funnel-layer" style="width:100%;background:linear-gradient(90deg,#00b96b,#00d4a0)" data-d="0">Layer 1 · Murcko 骨架精确匹配 — 核心骨架完全一致</div>
+      <div class="funnel-arrow" data-d="1">↓</div>
+      <div class="funnel-layer" style="width:72%;background:linear-gradient(90deg,#0891b2,#22d3ee)" data-d="2">Layer 2 · MCS 最大公共子结构 &gt; 60%</div>
+      <div class="funnel-arrow" data-d="3">↓</div>
+      <div class="funnel-layer" style="width:48%;background:linear-gradient(90deg,#7c3aed,#a78bfa)" data-d="4">Layer 3 · Morgan FP Tanimoto 兜底</div>
+    </div>
+    <div class="vis-terminal" style="margin-top:16px">
+      <div class="tln" data-d="5"><span style="color:var(--green)">✓</span> Murcko 匹配: <span style="color:var(--yellow)">12 hits</span> → MCS 补充: <span style="color:var(--yellow)">+8</span> → Tanimoto 兜底: <span style="color:var(--yellow)">+5</span></div>
+      <div class="tln" data-d="6"><span style="color:var(--green)">✓</span> 筛选 <span style="color:var(--cyan)">Top 5</span> 相似分子，作为 RAG 检索锚点</div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--purple)"></div><span>RAG 检索增强 · 文献知识库</span></div>
+    <div class="vis-terminal">
+      <div class="tln" data-d="7"><span style="color:var(--dim)">// 基于相似分子检索文献知识库...</span></div>
+      <div class="tln" data-d="8"><span style="color:var(--green)">→</span> RAG.retrieve(<span style="color:var(--purple)">"摘要知识库"</span>) — <span style="color:var(--yellow)">23 hits</span></div>
+      <div class="tln" data-d="9"><span style="color:var(--green)">→</span> RAG.retrieve(<span style="color:var(--purple)">"多步反应链路知识库"</span>) — <span style="color:var(--yellow)">14 hits</span></div>
+      <div class="tln" data-d="10"><span style="color:var(--green)">→</span> semantic_rank(<span style="color:var(--cyan)">user_goal</span>) — top 5 strategies</div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--green)"></div><span>LLM 融合生成 · 优化路线</span></div>
+    <div class="vis-terminal">
+      <div class="tln" data-d="11"><span style="color:var(--green)">→</span> LLM.generate(<span style="color:var(--cyan)">strategies + literature + prior</span>)</div>
+      <div class="tln" data-d="12"><span style="color:var(--green)">✓</span> 路线 1: 苯磺酰基苯环对位引入 F → 改善代谢稳定性</div>
+      <div class="tln" data-d="13"><span style="color:var(--green)">✓</span> 路线 2: 末端苯环对位引入 F → 阻断代谢氧化位点</div>
+      <div class="tln" data-d="14"><span style="color:var(--green)">✓</span> 路线 3: 苯磺酰基间位引入 F → 抑制氧化代谢</div>
+    </div>`;
+  }
+},
+// 5: Dual review
+{
+  badge:'STEP 04', title:'AI 智能优化路线与合成验证',
+  desc:'AI 生成多条优化路线，每条包含<strong>结构修饰策略</strong>、<strong>优化后分子</strong>与<strong>合成可行性评估</strong>。',
+  tags:[['✓ 策略对齐','ntg'],['合成难度','nty'],['结构优化','ntc']],
+  vis(){
+    return `
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px;opacity:0;transform:translateY(10px);transition:all .5s;position:relative" class="route-card" data-d="0">
+      <div style="position:absolute;top:14px;right:14px;display:flex;gap:6px">
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">🟢 难度: Low</span>
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">✅ 策略对齐</span>
+      </div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--primary)">路线 1 · 苯磺酰基对位氟化</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px">在苯磺酰基环的对位引入一个氟原子。该修饰通过强吸电子效应降低芳环的电子云密度，抑制 P450 酶系的氧化代谢，旨在改善代谢稳定性。</div>
+      <div class="mol-compare" style="margin-top:0">
+        <div class="mol-box show" style="padding:10px;transform:none;opacity:1">
+          <div class="mol-label">优化前</div>
+          <div style="margin:6px 0"><img src="assets/molecule_input.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="优化前"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);background:var(--bg3);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+        </div>
+        <div class="mol-arrow show" style="opacity:1"><img src="assets/arrow_right.svg" alt="arrow"></div>
+        <div class="mol-box show" style="padding:10px;border-color:var(--green);transform:none;opacity:1">
+          <div class="mol-label">优化后</div>
+          <div style="margin:6px 0"><img src="assets/molecule_route1.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="路线1"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);background:var(--green-l);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC=C(C=C1F)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px;opacity:0;transform:translateY(10px);transition:all .5s;position:relative" class="route-card" data-d="1">
+      <div style="position:absolute;top:14px;right:14px;display:flex;gap:6px">
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">🟢 难度: Low</span>
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">✅ 策略对齐</span>
+      </div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--primary)">路线 2 · 末端苯环对位氟化</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px">在末端苯环（非与内酯环稠合的苯环）的对位引入氟原子。旨在阻断该疏水芳环的代谢氧化位点，提高代谢稳定性，并降低活性代谢物生成风险，从而降低肝毒性风险。</div>
+      <div class="mol-compare" style="margin-top:0">
+        <div class="mol-box show" style="padding:10px;transform:none;opacity:1">
+          <div class="mol-label">优化前</div>
+          <div style="margin:6px 0"><img src="assets/molecule_input.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="优化前"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);background:var(--bg3);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+        </div>
+        <div class="mol-arrow show" style="opacity:1"><img src="assets/arrow_right.svg" alt="arrow"></div>
+        <div class="mol-box show" style="padding:10px;border-color:var(--green);transform:none;opacity:1">
+          <div class="mol-label">优化后</div>
+          <div style="margin:6px 0"><img src="assets/molecule_route2.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="路线2"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);background:var(--green-l);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=C(F)C=C3)C(=O)OC2</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px 20px;opacity:0;transform:translateY(10px);transition:all .5s;position:relative" class="route-card" data-d="2">
+      <div style="position:absolute;top:14px;right:14px;display:flex;gap:6px">
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">🟢 难度: Low</span>
+        <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-l);color:var(--green)">✅ 策略对齐</span>
+      </div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--primary)">路线 3 · 苯磺酰基间位氟化</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px">在苯磺酰基苯环的间位引入一个氟原子。该修饰通过吸电子效应降低芳环反应性，抑制 P450 酶系的氧化代谢，旨在改善代谢稳定性。</div>
+      <div class="mol-compare" style="margin-top:0">
+        <div class="mol-box show" style="padding:10px;transform:none;opacity:1">
+          <div class="mol-label">优化前</div>
+          <div style="margin:6px 0"><img src="assets/molecule_input.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="优化前"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);background:var(--bg3);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+        </div>
+        <div class="mol-arrow show" style="opacity:1"><img src="assets/arrow_right.svg" alt="arrow"></div>
+        <div class="mol-box show" style="padding:10px;border-color:var(--green);transform:none;opacity:1">
+          <div class="mol-label">优化后</div>
+          <div style="margin:6px 0"><img src="assets/molecule_route3.png" style="max-width:100%;max-height:110px;border-radius:6px" alt="路线3"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);background:var(--green-l);padding:4px 8px;border-radius:4px;word-break:break-all;margin-top:4px">CS(=O)(=O)C1=CC(F)=CC=C1C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+        </div>
+      </div>
+    </div>`;
+  }
+},
+// 6: Scoring
+{
+  badge:'STEP 05', title:'综合 ADMET 评分',
+  desc:'五维加权几何平均：<strong>吸收 0.20</strong> · <strong>分布 0.10</strong> · <strong>代谢 0.20</strong> · <strong>排泄 0.05</strong> · <strong>毒性 0.45</strong>。<strong>一票否决</strong>：hERG/Ames 超阈值直接剔除。',
+  tags:[['Geometric Mean','ntg'],['Veto hERG/AMES','ntr'],['Weighted','nty']],
+  vis(){
+    return `
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--cyan)"></div><span>维度权重分配</span></div>
+    <div class="weight-vis">
+      <div class="weight-seg" style="flex:20;background:var(--blue)" data-d="0">吸收 0.20</div>
+      <div class="weight-seg" style="flex:10;background:var(--purple)" data-d="1">分布 0.10</div>
+      <div class="weight-seg" style="flex:20;background:var(--yellow)" data-d="2">代谢 0.20</div>
+      <div class="weight-seg tight" style="flex:5;background:var(--orange)" data-d="3"><span>排泄</span><span>0.05</span></div>
+      <div class="weight-seg" style="flex:45;background:var(--red)" data-d="4">毒性 0.45</div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--red)"></div><span>一票否决机制</span></div>
+    <div class="prop-grid g2">
+      <div class="prop-cell" data-d="5" style="border-color:var(--red)"><div class="pval val-r">hERG</div><div class="plbl">心脏毒性 > 阈值 → 直接剔除</div></div>
+      <div class="prop-cell" data-d="6" style="border-color:var(--red)"><div class="pval val-r">AMES</div><div class="plbl">致突变性 > 阈值 → 直接剔除</div></div>
+    </div>
+    <div class="sec-hdr" style="margin-top:24px"><div class="sec-dot" style="background:var(--green)"></div><span>加权几何平均公式</span></div>
+    <div class="vis-terminal">
+      <div class="tln" data-d="7"><span style="color:var(--dim)">// Weighted Geometric Mean</span></div>
+      <div class="tln" data-d="8">Score = A<sup>0.20</sup> + D<sup>0.10</sup> + M<sup>0.20</sup> + E<sup>0.05</sup> + T<sup>0.45</sup></div>
+      <div class="tln" data-d="9"><span style="color:var(--dim)">// 任一维度极差 → 总分大幅下滑</span></div>
+      <div class="tln" data-d="10"><span style="color:var(--red)">// hERG > threshold || AMES > threshold → VETO</span></div>
+    </div>`;
+  }
+},
+// 9: Output
+{
+  badge:'OUTPUT', title:'最终候选分子',
+  desc:'输出经过层层筛选的 <strong>优化策略</strong> 和 <strong>候选分子方案</strong>，每个方案附带合成路径、ADMET 改善对比和综合评分。',
+  tags:[['Top Ranking','ntg'],['Synthesis Path','ntc'],['ADMET Δ','ntp']],
+  vis(){
+    return `
+    <div class="sec-hdr"><div class="sec-dot" style="background:var(--green)"></div><span>🏆 最终候选分子评分 (Top Ranking)</span></div>
+    <div class="rank-list">
+      <div class="rank-card top" data-d="0">
+        <div class="rank-pos r1">Route 2</div>
+        <div class="rank-info">
+          <div class="rank-smiles">CS(=O)(=O)C1=CC=C(C=C1)C2=C(C3=CC=C(F)C=C3)C(=O)OC2</div>
+          <div class="rank-props">
+            <span class="rank-prop">MW <span class="up">332.35 ↑</span></span>
+            <span class="rank-prop">LogP <span class="up">2.70 ↑</span></span>
+            <span class="rank-prop">SA <span class="up">2.20 ↑</span></span>
+          </div>
+          <div class="admet-detail" style="margin-top:8px">
+            <div class="admet-mini"><span class="ak">微粒体清除率</span><span class="av" style="color:var(--green)">10.70 ↓</span></div>
+            <div class="admet-mini"><span class="ak">肝细胞清除率</span><span class="av" style="color:var(--green)">43.83 ↓</span></div>
+            <div class="admet-mini"><span class="ak">肝损伤风险</span><span class="av">0.970</span></div>
+            <div class="admet-mini"><span class="ak">CYP3A4</span><span class="av" style="color:var(--green)">0.350 ↑</span></div>
+          </div>
+        </div>
+        <div class="rank-score" style="color:var(--green)">0.683</div>
+      </div>
+      <div class="rank-card" data-d="1">
+        <div class="rank-pos r2">Route 1</div>
+        <div class="rank-info">
+          <div class="rank-smiles">CS(=O)(=O)C1=CC=C(C=C1F)C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+          <div class="rank-props">
+            <span class="rank-prop">MW <span class="up">332.35 ↑</span></span>
+            <span class="rank-prop">LogP <span class="up">2.70 ↑</span></span>
+            <span class="rank-prop">SA <span class="up">2.34 ↑</span></span>
+          </div>
+          <div class="admet-detail" style="margin-top:8px">
+            <div class="admet-mini"><span class="ak">微粒体清除率</span><span class="av" style="color:var(--red)">22.61 ↑</span></div>
+            <div class="admet-mini"><span class="ak">肝细胞清除率</span><span class="av" style="color:var(--red)">53.18 ↑</span></div>
+            <div class="admet-mini"><span class="ak">肝损伤风险</span><span class="av">0.971</span></div>
+            <div class="admet-mini"><span class="ak">CYP3A4</span><span class="av" style="color:var(--red)">0.623 ↑</span></div>
+          </div>
+        </div>
+        <div class="rank-score" style="color:var(--cyan)">0.650</div>
+      </div>
+      <div class="rank-card" data-d="2">
+        <div class="rank-pos r3">Route 3</div>
+        <div class="rank-info">
+          <div class="rank-smiles">CS(=O)(=O)C1=CC(F)=CC1C2=C(C3=CC=CC=C3)C(=O)OC2</div>
+          <div class="rank-props">
+            <span class="rank-prop">MW <span class="up">332.35 ↑</span></span>
+            <span class="rank-prop">LogP <span class="up">2.70 ↑</span></span>
+            <span class="rank-prop">SA <span class="up">2.39 ↑</span></span>
+          </div>
+          <div class="admet-detail" style="margin-top:8px">
+            <div class="admet-mini"><span class="ak">微粒体清除率</span><span class="av" style="color:var(--red)">25.92 ↑</span></div>
+            <div class="admet-mini"><span class="ak">肝细胞清除率</span><span class="av" style="color:var(--red)">54.74 ↑</span></div>
+            <div class="admet-mini"><span class="ak">肝损伤风险</span><span class="av">0.965</span></div>
+            <div class="admet-mini"><span class="ak">CYP3A4</span><span class="av" style="color:var(--red)">0.707 ↑</span></div>
+          </div>
+        </div>
+        <div class="rank-score" style="color:var(--purple)">0.643</div>
+      </div>
+    </div>
+    <div class="vis-terminal" style="margin-top:20px">
+      <div class="tln" data-d="3"><span style="color:var(--green)">✓ 优化完成 — merged to main</span></div>
+      <div class="tln" data-d="4">共生成 <span style="color:var(--yellow)">3</span> 条可参考优化路线，供药物化学家决策参考</div>
+    </div>`;
+  }
+},
+];
+
+const N = S.length;
+let cur = -1, timer = null;
+const STEP_DURATION = 5600;
+const VISUAL_BASE_DELAY = 320;
+const VISUAL_STAGGER_DELAY = 140;
+const TERMINAL_BASE_DELAY = 460;
+const TERMINAL_STAGGER_DELAY = 200;
+const BAR_FILL_DELAY = 520;
+const OUTRO_DELAY = 1800;
+
+// ═══ Build timeline ═══
+const tlEl = document.getElementById('timeline');
+S.forEach((_,i)=>{
+  if(i>0){const e=document.createElement('div');e.className='tl-edge';e.id=`te${i}`;tlEl.appendChild(e)}
+  const n=document.createElement('div');n.className='tl-node';n.id=`tn${i}`;
+  const l=document.createElement('div');l.className='tl-lbl';l.textContent=i<9?`0${i+1}`:`${i+1}`;
+  n.appendChild(l);n.onclick=()=>jumpTo(i);tlEl.appendChild(n);
+});
+
+// ═══ Render ═══
+function go(idx){
+  if(idx<0||idx>=N) return;
+  cur = idx;
+  document.getElementById('progFill').style.width=`${((idx+1)/N)*100}%`;
+
+  // Timeline
+  S.forEach((_,i)=>{
+    const n=document.getElementById(`tn${i}`);
+    n.className='tl-node';
+    if(i<idx) n.classList.add('done');
+    else if(i===idx) n.classList.add('current');
+    if(i>0){const e=document.getElementById(`te${i}`);e.className='tl-edge';if(i<=idx)e.classList.add('done')}
+  });
+
+  // Narration
+  const s=S[idx];
+  const nar=document.getElementById('narPanel');
+  nar.innerHTML=`
+    <div class="nar-badge">${s.badge}</div>
+    <div class="nar-title">${s.title}</div>
+    <div class="nar-desc">${s.desc}</div>
+    <div class="nar-tags">${s.tags.map(([t,c])=>`<span class="ntag ${c}">${t}</span>`).join('')}</div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    nar.querySelector('.nar-badge').classList.add('show');
+    nar.querySelector('.nar-title').classList.add('show');
+    nar.querySelector('.nar-desc').classList.add('show');
+    nar.querySelector('.nar-tags').classList.add('show');
+  }));
+
+  // Visual
+  const vis=document.getElementById('visPanel');
+  vis.scrollTop=0;
+  vis.innerHTML=`<div class="vis-container">${s.vis()}</div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    vis.querySelector('.vis-container').classList.add('show');
+    // Auto-scroll helper: wait for transition to finish, then scroll
+    function scrollIntoVis(el){
+      setTimeout(()=>{
+        const rect=el.getBoundingClientRect();
+        const visRect=vis.getBoundingClientRect();
+        if(rect.bottom > visRect.bottom - 20){
+          vis.scrollTo({top:vis.scrollTop + rect.bottom - visRect.bottom + 40, behavior:'smooth'});
+        }
+      },500);
+    }
+    // Staggered prop cells
+    vis.querySelectorAll('.prop-cell,.funnel-layer,.funnel-arrow,.rank-card,.filter-step,.weight-seg,.mol-box,.mol-arrow,.route-card').forEach(el=>{
+      const d=parseInt(el.dataset.d||0);
+      setTimeout(()=>{el.classList.add('show');scrollIntoVis(el);},VISUAL_BASE_DELAY + d * VISUAL_STAGGER_DELAY);
+    });
+    // Terminal lines
+    vis.querySelectorAll('.tln').forEach(el=>{
+      const d=parseInt(el.dataset.d||0);
+      setTimeout(()=>{el.classList.add('show');scrollIntoVis(el);},TERMINAL_BASE_DELAY + d * TERMINAL_STAGGER_DELAY);
+    });
+    // Bar fills
+    vis.querySelectorAll('.bar-fill').forEach(el=>{
+      setTimeout(()=>{el.classList.add('show');el.style.width=el.dataset.w},BAR_FILL_DELAY);
+    });
+  }));
+}
+
+function next(){
+  if(cur>=N-1){clearInterval(timer);timer=null;setTimeout(showOutro,OUTRO_DELAY);return}
+  go(cur+1);
+}
+
+function jumpTo(i){
+  clearInterval(timer);
+  go(i);
+  timer=setInterval(next,STEP_DURATION);
+}
+
+function showOutro(){
+  const o=document.getElementById('outro');
+  o.classList.add('show');
+  setTimeout(()=>o.querySelector('h2').classList.add('show'),300);
+  setTimeout(()=>o.querySelector('.os').classList.add('show'),800);
+  setTimeout(()=>document.getElementById('replayBtn').classList.add('show'),1200);
+}
+
+function startDemo(){
+  document.getElementById('stage').style.display='block';
+  go(0);
+  timer=setInterval(next,STEP_DURATION);
+}
+
+function replay(){
+  const o=document.getElementById('outro');
+  o.classList.remove('show');
+  o.querySelector('h2').classList.remove('show');
+  o.querySelector('.os').classList.remove('show');
+  document.getElementById('replayBtn').classList.remove('show');
+  cur=-1;go(0);
+  timer=setInterval(next,STEP_DURATION);
+}
+
+// Auto-start demo
+setTimeout(startDemo, 300);
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();if(cur>=0)jumpTo(Math.min(cur+1,N-1))}
+  if(e.key==='ArrowLeft'){e.preventDefault();if(cur>0)jumpTo(cur-1)}
+});
+</script>
+</body>
+</html>

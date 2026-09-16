@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -49,13 +49,13 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #f8f9fc;
+  --foreground: #1a1f36;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #4f6ef7;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -126,5 +126,145 @@
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
+}
+
+.auth-shell-viewport {
+  height: 100dvh;
+  min-height: 100dvh;
+}
+
+.app-shell-viewport {
+  height: 100dvh;
+  min-height: 100dvh;
+  background-color: rgb(248, 250, 252);
+  background-image:
+    radial-gradient(
+      120% 85% at 0px -5%,
+      rgba(226, 233, 254, 0.95) 0%,
+      rgba(0, 0, 0, 0) 58%
+    ),
+    radial-gradient(
+      110% 75% at 100% -5%,
+      rgba(236, 226, 253, 0.9) 0%,
+      rgba(0, 0, 0, 0) 55%
+    ),
+    radial-gradient(
+      100% 70% at 50% 105%,
+      rgba(240, 245, 249, 0.75) 0%,
+      rgba(0, 0, 0, 0) 52%
+    ),
+    linear-gradient(rgb(248, 250, 252) 0%, rgb(241, 245, 249) 100%);
+}
+
+@keyframes overlayShow {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/*
+ * Enter animation must NOT touch translate used for centering.
+ * Previous keyframes used transform: translate(-50%, …) which fought
+ * Tailwind -translate-* / left-50% top-50%, causing a top-left flash
+ * on the first frame before the animation bound.
+ */
+@keyframes contentShow {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.data-\[state\=open\]\:animate-overlayShow[data-state="open"],
+.yzn-animate-overlay-show {
+  animation: 0.3s cubic-bezier(0.16, 1, 0.3, 1) both overlayShow;
+}
+
+.data-\[state\=open\]\:animate-contentShow[data-state="open"],
+.yzn-animate-content-show {
+  /* `both` applies 0% keyframe on first paint — no unstyled flash */
+  animation: 0.3s cubic-bezier(0.16, 1, 0.3, 1) both contentShow;
+}
+
+@keyframes homeFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes homeBounceDown {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes homeTabProgress {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes homeTabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-fade-up {
+  animation: 0.8s ease both homeFadeUp;
+}
+
+.home-bounce-down {
+  animation: 2s ease-in-out infinite homeBounceDown;
+}
+
+.home-tab-fade-in {
+  animation: 0.5s ease homeTabFadeIn;
+}
+
+.font-pangmen {
+  font-family: var(--font-pangmen), "PingFang SC", sans-serif;
+}
+
+@keyframes chatToastEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.chat-toast-enter {
+  animation: 0.28s cubic-bezier(0.16, 1, 0.3, 1) both chatToastEnter;
 }
